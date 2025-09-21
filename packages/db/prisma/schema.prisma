@@ -1,0 +1,531 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MonitorJobTypes {
+  http
+  tcp
+  icmp
+  other
+}
+
+enum MonitorPeriodicity {
+  ONE_MIN    @map("1m")
+  FIVE_MIN   @map("5m")
+  TEN_MIN    @map("10m")
+  THIRTY_MIN @map("30m")
+  ONE_HOUR   @map("1h")
+  OTHER
+}
+
+enum MonitorStatusEnum {
+  active
+  down
+  inactive
+}
+
+enum MonitorMethods {
+  GET
+  POST
+  PUT
+  DELETE
+  HEAD
+  OPTIONS
+  PATCH
+}
+
+enum NotificationProvider {
+  email
+  slack
+  pagerduty
+  opsgenie
+  discord
+  telegram
+  sms
+}
+
+enum WorkspaceRole {
+  owner
+  admin
+  member
+}
+
+enum StatusReportStatus {
+  investigating
+  identified
+  monitoring
+  resolved
+}
+
+enum StatusIncident {
+  triage
+  investigating
+  identified
+  monitoring
+  resolved
+  duplicated
+}
+
+// User Model 
+model User {
+  id            Int       @id @default(autoincrement())
+  tenantId      String?   @unique @map("tenant_id")
+  firstName     String    @default("") @map("first_name")
+  lastName      String    @default("") @map("last_name")
+  photoUrl      String    @default("") @map("photo_url")
+  name          String?
+  email         String    @default("")
+  emailVerified DateTime? @map("emailVerified")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @map("updated_at")
+
+  usersToWorkspaces UsersToWorkspaces[]
+  accounts          Account[]
+  sessions          Session[]
+
+  acknowledgedIncidents Incident[] @relation("IncidentAcknowledgedBy")
+  resolvedIncidents     Incident[] @relation("IncidentResolvedBy")
+  Incident              Incident[]
+
+  @@map("user")
+}
+
+// User PulseBit Account 
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            Int     @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("account")
+}
+
+// Workspace Sessions 
+model Session {
+  sessionToken String   @id @map("session_token")
+  userId       Int      @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+// VerificationToken - Schema 
+model VerificationToken {
+  identifier String   @id @map("identifier")
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_token")
+}
+
+// Workspace - page, monitor, notification, maintenance, statusReport and etc...
+model Workspace {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  usersToWorkspaces UsersToWorkspaces[]
+  pages             Page[]
+  monitors          Monitor[]
+  notifications     Notification[]
+  maintenances      Maintenance[]
+  statusReports     StatusReport[]
+  monitorTags       MonitorTag[]
+  checks            Check[]
+  invitations       Invitation[]
+  applications      Application[]
+  Incident          Incident[]
+  MonitorRun        MonitorRun[]
+
+  @@map("workspace")
+}
+
+// Many-to-Many User -> Workspace
+model UsersToWorkspaces {
+  userId      Int           @map("user_id")
+  workspaceId Int           @map("workspace_id")
+  role        WorkspaceRole @default(member)
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: NoAction)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: NoAction)
+
+  @@id([userId, workspaceId])
+  @@map("users_to_workspaces")
+}
+
+// Page - monitoring page
+model Page {
+  id                Int      @id @default(autoincrement())
+  workspaceId       Int      @map("workspace_id")
+  title             String
+  description       String
+  icon              String   @default("")
+  slug              String   @unique
+  customDomain      String   @map("custom_domain")
+  published         Boolean  @default(false)
+  forceTheme        String   @default("system") // enum: dark, light, system
+  password          String?  @map("password")
+  passwordProtected Boolean  @default(false) @map("password_protected")
+  homepageUrl       String?  @map("homepage_url")
+  contactUrl        String?  @map("contact_url")
+  legacyPage        Boolean  @default(true) @map("legacy_page")
+  configuration     String?  @map("configuration")
+  showMonitorValues Boolean  @default(true) @map("show_monitor_values")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @default(now()) @map("updated_at")
+
+  workspace       Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  monitorsToPages MonitorsToPages[]
+  maintenances    Maintenance[]
+  statusReports   StatusReport[]
+  pageSubscribers PageSubscriber[]
+
+  @@map("page")
+}
+
+// MonitorToPages
+
+model MonitorsToPages {
+  monitorId Int      @map("monitor_id")
+  pageId    Int      @map("page_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  order     Int      @default(0)
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  page    Page    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@id([monitorId, pageId])
+  @@map("monitors_to_pages")
+}
+
+// PageSubscriber
+model PageSubscriber {
+  id         Int       @id @default(autoincrement())
+  email      String
+  pageId     Int       @map("page_id")
+  token      String?
+  acceptedAt DateTime? @map("accepted_at")
+  expiresAt  DateTime? @map("expires_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @default(now()) @map("updated_at")
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@map("page_subscriber")
+}
+
+// Monitor model 
+model Monitor {
+  id              Int                @id @default(autoincrement())
+  jobType         MonitorJobTypes    @default(http) @map("job_type")
+  periodicity     MonitorPeriodicity @default(OTHER) @map("periodicity")
+  status          MonitorStatusEnum  @default(active)
+  active          Boolean            @default(false)
+  regions         String             @default("")
+  url             String
+  name            String             @default("")
+  description     String             @default("")
+  headers         String             @default("")
+  body            String             @default("")
+  method          MonitorMethods     @default(GET)
+  workspaceId     Int?               @map("workspace_id")
+  timeout         Int                @default(45000)
+  degradedAfter   Int?               @map("degraded_after")
+  assertions      String?
+  otelEndpoint    String?            @map("otel_endpoint")
+  otelHeaders     String?            @map("otel_headers")
+  public          Boolean            @default(false)
+  retry           Int                @default(3)
+  followRedirects Boolean            @default(true) @map("follow_redirects")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @default(now()) @map("updated_at")
+  deletedAt       DateTime?          @map("deleted_at")
+
+  workspace               Workspace?                @relation(fields: [workspaceId], references: [id], onDelete: NoAction)
+  monitorsToPages         MonitorsToPages[]
+  monitorsToStatusReports MonitorsToStatusReport[]
+  monitorTagsToMonitors   MonitorTagsToMonitors[]
+  notificationsToMonitors NotificationsToMonitors[]
+  maintenancesToMonitors  MaintenancesToMonitors[]
+  incidents               Incident[]
+  monitorStatuses         MonitorStatus[]
+  monitorRuns             MonitorRun[]
+  NotificationTrigger     NotificationTrigger[]
+
+  @@map("monitor")
+}
+
+// monitorStatus
+model MonitorStatus {
+  monitorId Int               @map("monitor_id")
+  region    String            @default("")
+  status    MonitorStatusEnum @default(active)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @default(now()) @map("updated_at")
+
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@id([monitorId, region])
+  @@index([monitorId, region], name: "monitor_status_idx")
+  @@map("monitor_status")
+}
+
+// monitorTag
+model MonitorTag {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int      @map("workspace_id")
+  name        String
+  color       String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  workspace             Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  monitorTagsToMonitors MonitorTagsToMonitors[]
+
+  @@map("monitor_tag")
+}
+
+// MonitorTagsToMonitor
+model MonitorTagsToMonitors {
+  monitorId    Int      @map("monitor_id")
+  monitorTagId Int      @map("monitor_tag_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  monitor    Monitor    @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  monitorTag MonitorTag @relation(fields: [monitorTagId], references: [id], onDelete: Cascade)
+
+  @@id([monitorId, monitorTagId])
+  @@map("monitor_tag_to_monitor")
+}
+
+// Notification 
+model Notification {
+  id          Int                  @id @default(autoincrement())
+  name        String
+  provider    NotificationProvider
+  data        String               @default("{}")
+  workspaceId Int?                 @map("workspace_id")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @default(now()) @map("updated_at")
+
+  workspace               Workspace?                @relation(fields: [workspaceId], references: [id], onDelete: NoAction)
+  notificationsToMonitors NotificationsToMonitors[]
+  notificationTriggers    NotificationTrigger[]
+
+  @@map("notification")
+}
+
+// NotificationToMonitor
+model NotificationsToMonitors {
+  monitorId      Int      @map("monitor_id")
+  notificationId Int      @map("notification_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  monitor      Monitor      @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@id([monitorId, notificationId])
+  @@map("notifications_to_monitors")
+}
+
+// NotificationTriggers
+model NotificationTrigger {
+  id             Int  @id @default(autoincrement())
+  monitorId      Int? @map("monitor_id")
+  notificationId Int? @map("notification_id")
+  cronTimestamp  Int  @map("cron_timestamp")
+
+  monitor      Monitor?      @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  notification Notification? @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, monitorId, cronTimestamp])
+  @@map("notification_trigger")
+}
+
+model Maintenance {
+  id          Int      @id @default(autoincrement())
+  title       String
+  message     String
+  from        DateTime @map("from")
+  to          DateTime @map("to")
+  workspaceId Int?     @map("workspace_id")
+  pageId      Int?     @map("page_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  workspace              Workspace?               @relation(fields: [workspaceId], references: [id], onDelete: NoAction)
+  page                   Page?                    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  maintenancesToMonitors MaintenancesToMonitors[]
+
+  @@map("maintenance")
+}
+
+model MaintenancesToMonitors {
+  maintenanceId Int      @map("maintenance_id")
+  monitorId     Int      @map("monitor_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  maintenance Maintenance @relation(fields: [maintenanceId], references: [id], onDelete: Cascade)
+  monitor     Monitor     @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@id([maintenanceId, monitorId])
+  @@map("maintenance_to_monitor")
+}
+
+model Application {
+  id          Int      @id @default(autoincrement())
+  name        String?
+  dsn         String?  @unique
+  workspaceId Int?     @map("workspace_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @map("updated_at")
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction)
+
+  @@map("application")
+}
+
+// Check: From check/check.ts
+model Check {
+  id            Int            @id @default(autoincrement())
+  regions       String         @default("")
+  url           String
+  headers       String         @default("")
+  body          String         @default("")
+  method        MonitorMethods @default(GET)
+  countRequests Int            @default(1) @map("count_requests")
+  workspaceId   Int?           @map("workspace_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction)
+
+  @@map("check")
+}
+
+// Incident model 
+model Incident {
+  id                    Int            @id @default(autoincrement())
+  title                 String         @default("")
+  summary               String         @default("")
+  status                StatusIncident @default(triage)
+  monitorId             Int?           @map("monitor_id")
+  workspaceId           Int?           @map("workspace_id")
+  startedAt             DateTime       @default(now()) @map("started_at")
+  acknowledgedAt        DateTime?      @map("acknowledged_at")
+  acknowledgedBy        Int?           @map("acknowledged_by")
+  resolvedAt            DateTime?      @map("resolved_at")
+  resolvedBy            Int?           @map("resolved_by")
+  incidentScreenshotUrl String?        @map("incident_screenshot_url")
+  recoveryScreenshotUrl String?        @map("recovery_screenshot_url")
+  autoResolved          Boolean        @default(false) @map("auto_resolved")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  updatedAt             DateTime       @default(now()) @map("updated_at")
+
+  monitor   Monitor?   @relation(fields: [monitorId], references: [id], onDelete: NoAction)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction)
+
+  acknowledgedByUser User? @relation("IncidentAcknowledgedBy", fields: [acknowledgedBy], references: [id])
+  resolvedByUser     User? @relation("IncidentResolvedBy", fields: [resolvedBy], references: [id])
+  User               User? @relation(fields: [userId], references: [id])
+  userId             Int?
+
+  @@unique([monitorId, startedAt])
+  @@map("incident")
+}
+
+// Invitation 
+model Invitation {
+  id          Int           @id @default(autoincrement())
+  email       String
+  role        WorkspaceRole @default(member)
+  workspaceId Int           @map("workspace_id")
+  token       String
+  expiresAt   DateTime      @map("expires_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  acceptedAt  DateTime?     @map("accepted_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("invitation")
+}
+
+// MonitorToRun
+model MonitorRun {
+  id          Int       @id @default(autoincrement())
+  workspaceId Int?      @map("workspace_id")
+  monitorId   Int?      @map("monitor_id")
+  runnedAt    DateTime? @map("runned_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: NoAction)
+  monitor   Monitor?   @relation(fields: [monitorId], references: [id], onDelete: NoAction)
+
+  @@map("monitor_run")
+}
+
+// StatusReport
+model StatusReport {
+  id          Int                @id @default(autoincrement())
+  status      StatusReportStatus
+  title       String
+  workspaceId Int?               @map("workspace_id")
+  pageId      Int?               @map("page_id")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @default(now()) @map("updated_at")
+
+  workspace               Workspace?               @relation(fields: [workspaceId], references: [id], onDelete: NoAction)
+  page                    Page?                    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  statusReportUpdates     StatusReportUpdate[]
+  monitorsToStatusReports MonitorsToStatusReport[]
+
+  @@map("status_report")
+}
+
+// StatusReportUpdates
+model StatusReportUpdate {
+  id             Int                @id @default(autoincrement())
+  status         StatusReportStatus
+  date           DateTime
+  message        String
+  statusReportId Int                @map("status_report_id")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @default(now()) @map("updated_at")
+
+  statusReport StatusReport @relation(fields: [statusReportId], references: [id], onDelete: Cascade)
+
+  @@map("status_report_update")
+}
+
+model MonitorsToStatusReport {
+  monitorId      Int      @map("monitor_id")
+  statusReportId Int      @map("status_report_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  monitor      Monitor      @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  statusReport StatusReport @relation(fields: [statusReportId], references: [id], onDelete: Cascade)
+
+  @@id([monitorId, statusReportId])
+  @@map("status_report_to_monitors")
+}
