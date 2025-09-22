@@ -1,0 +1,11 @@
+{
+  "name": "@pulsebit/tsconfig",
+  "version": "1.0.0",
+  "description": "Shared TypeScript configuration for PulseBit",
+  "main": "tsconfig.json",
+  "files": [
+    "tsconfig.json",
+    "react-library.json"
+  ],
+  "license": "MIT"
+}
