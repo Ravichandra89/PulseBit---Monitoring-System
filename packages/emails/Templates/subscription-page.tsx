@@ -4,7 +4,7 @@ import Layout from "./components/layout";
 import { style } from "./components/style";
 
 // Zod subscription-page schema
-export const subscriptionPageSchema = z.object({
+const subscriptionPageSchema = z.object({
   token: z.string(),
   page: z.string(),
   domain: z.string(),

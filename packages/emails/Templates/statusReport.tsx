@@ -152,3 +152,5 @@ We’ll post another update by **19:00 UTC** today or sooner if critical develop
   `,
   monitors: ["PulseBit API", "PulseBit Webhook"],
 };
+
+export default statusReportEmail;

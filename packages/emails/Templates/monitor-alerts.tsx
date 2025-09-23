@@ -10,9 +10,10 @@ import {
   Row,
   Text,
 } from "@react-email/components";
-import Layout from "./layout";
-import Footer from "./footer";
-import { style, colors } from "../components/style";
+
+import { style, colors } from "./components/style";
+import Footer from "./components/footer";
+import Layout from "./components/layout";
 import { z } from "zod";
 import { timeStamp } from "console";
 

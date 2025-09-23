@@ -2,7 +2,7 @@
   "extends": "@pulsebit/tsconfig/react-library.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
     "jsx": "react-jsx",
     "types": ["react", "react-dom"]
   },
