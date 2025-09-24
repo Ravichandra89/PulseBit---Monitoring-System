@@ -1,0 +1,20 @@
+{
+  "name": "@pulsebit/notification-emails",
+  "version": "0.0.0",
+  "main": "src/index.ts",
+  "description": "Log drains Vercel integration.",
+  "dependencies": {
+    "@pulsebit/db": "workspace:*",
+    "@pulsebit/emails": "workspace:*",
+    "@react-email/components": "0.0.36",
+    "@react-email/render": "1.0.6",
+    "@t3-oss/env-core": "0.7.0",
+    "resend": "4.0.1",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@pulsebit/tsconfig": "workspace:*",
+    "@types/node": "22.10.2",
+    "typescript": "5.7.2"
+  }
+}
