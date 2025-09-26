@@ -1,0 +1,168 @@
+// Evebr Props
+export type EventProps = {
+  name: string;
+  channel: string;
+};
+
+export const Events = {
+  CreateUser: {
+    name: "user_created",
+    channel: "registration",
+  },
+  SkipOnBoarding: {
+    name: "onboarding_skipped",
+    channel: "onboarding",
+  },
+  SignInUser: {
+    name: "user_signed_in",
+    channel: "login",
+  },
+  SignOutUser: {
+    name: "user_sign_out",
+    channel: "logout",
+  },
+  CreateMonitor: {
+    name: "monitor_created",
+    channel: "monitor",
+  },
+  UpdateMonitor: {
+    name: "monitor_updated",
+    channel: "monitor",
+  },
+  DeleteMonitor: {
+    name: "monitor_deleted",
+    channel: "monitor",
+  },
+  CloneMonitor: {
+    name: "monitor_cloned",
+    channel: "monitor",
+  },
+  TestMonitor: {
+    name: "monitor_tested",
+    channel: "monitor",
+  },
+  CreatePage: {
+    name: "page_created",
+    channel: "page",
+  },
+  UpdatePage: {
+    name: "page_updated",
+    channel: "page",
+  },
+  UpdatePageDomain: {
+    name: "page_domain_updated",
+    channel: "page",
+  },
+  DeletePage: {
+    name: "page_deleted",
+    channel: "page",
+  },
+  SubscribePage: {
+    name: "page_subscribed",
+    channel: "page",
+  },
+  CreateReport: {
+    name: "report_created",
+    channel: "report",
+  },
+  UpdateReport: {
+    name: "report_updated",
+    channel: "report",
+  },
+  DeleteReport: {
+    name: "report_deleted",
+    channel: "report",
+  },
+  CreateReportUpdate: {
+    name: "report_update_created",
+    channel: "report",
+  },
+  UpdateReportUpdate: {
+    name: "report_update_updated",
+    channel: "report",
+  },
+  DeleteReportUpdate: {
+    name: "report_update_delete",
+    channel: "report",
+  },
+  CreateMaintenance: {
+    name: "maintenance_created",
+    channel: "maintenance",
+  },
+  UpdateMaintenance: {
+    name: "maintenance_updated",
+    channel: "maintenance",
+  },
+  DeleteMaintenance: {
+    name: "maintenance_deleted",
+    channel: "maintenance",
+  },
+  CreateNotification: {
+    name: "notification_created",
+    channel: "notification",
+  },
+  UpdateNotification: {
+    name: "notification_updated",
+    channel: "notification",
+  },
+  DeleteNotification: {
+    name: "notification_deleted",
+    channel: "notification",
+  },
+  AcknowledgeIncident: {
+    name: "incident_acknowledged",
+    channel: "incident",
+  },
+  ResolveIncident: {
+    name: "incident_resolved",
+    channel: "incident",
+  },
+  UpdateIncident: {
+    name: "incident_updated",
+    channel: "incident",
+  },
+  DeleteIncident: {
+    name: "incident_deleted",
+    channel: "incident",
+  },
+  InviteUser: {
+    name: "user_invited",
+    channel: "team",
+  },
+  DeleteInvite: {
+    name: "invitation_deleted",
+    channel: "team",
+  },
+  AcceptInvite: {
+    name: "invitation_accepted",
+    channel: "team",
+  },
+  RemoveUser: {
+    name: "user_removed",
+    channel: "team",
+  },
+  CreateAPI: {
+    name: "api_key_created",
+    channel: "api_key",
+  },
+  RevokeAPI: {
+    name: "api_key_revoked",
+    channel: "api_key",
+  },
+  UpdatedWorkspace: {
+    name: "workspace_updated",
+    channel: "workspace",
+  },
+  UpgradeWorkspace: {
+    name: "workspace_upgraded",
+    channel: "billing",
+  },
+  StripePortal: {
+    name: "stripe_portal",
+    channel: "billing",
+  },
+  DowngradeWorkspace: {
+    name: "workspace_downgraded",
+    channel: "billing",
+  },
+} as const satisfies Record<string, EventProps>;
