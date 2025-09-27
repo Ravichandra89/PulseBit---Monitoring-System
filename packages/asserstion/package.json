@@ -1,5 +1,5 @@
 {
-  "name": "@openstatus/assertions",
+  "name": "@pulsebit/assertions",
   "version": "1.0.0",
   "description": "",
   "main": "src/index.ts",
