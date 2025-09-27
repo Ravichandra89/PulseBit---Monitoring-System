@@ -1,0 +1,18 @@
+{
+  "name": "@openstatus/assertions",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.ts",
+  "scripts": {},
+  "dependencies": {
+    "jsonpath-plus": "7.2.0"
+  },
+  "devDependencies": {
+    "@pulsebit/tsconfig": "workspace:*",
+    "typescript": "5.7.2",
+    "zod": "3.24.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
