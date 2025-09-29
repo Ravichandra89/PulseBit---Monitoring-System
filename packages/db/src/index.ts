@@ -13,4 +13,11 @@ const prismaClient =
 
 if (process.env.NODE_ENV === "development") global.prisma = prismaClient;
 
+export type {
+  Incident,
+  StatusReport,
+  Workspace,
+  Monitor,
+} from "@prisma/client";
+
 export default prismaClient;
